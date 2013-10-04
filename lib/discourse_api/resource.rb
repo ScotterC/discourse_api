@@ -1,4 +1,5 @@
 require 'net/http'
+require 'net/http/post/multipart'
 require 'json'
 
 class DiscourseApi::Resource
@@ -16,6 +17,21 @@ class DiscourseApi::Resource
     define_method method_name do |args|
       parsed_path = DiscourseApi::ParsedPath.new(path, route_args)
       perform_post(parsed_path, args)
+    end
+  end
+
+  def self.multipart_post(args)
+    # ruby 1.9.3 for now
+    array_args = args.to_a
+    method_name, path = array_args[0]
+    route_args = {}
+    array_args[1..-1].each do |k, v|
+      route_args[k] = v
+    end
+
+    define_method method_name do |args|
+      parsed_path = DiscourseApi::ParsedPath.new(path, route_args)
+      perform_multipart_post(parsed_path, args)
     end
   end
 
@@ -52,6 +68,16 @@ class DiscourseApi::Resource
     actual_args = api_args(actual_args)
 
     req = Net::HTTP::Post.new(path, initheader = {'Content-Type' =>'application/json'})
+    req.body = api_args(actual_args).to_json
+    http_client.start {|http| http.request(req) }
+  end
+
+  def perform_multipart_post(parsed_path, args)
+    parsed_path.validate!(args)
+    path, actual_args = parsed_path.generate(args)
+    actual_args = api_args(actual_args)
+
+    req = Net::HTTP::Post::Multipart.new(path, {}, {'Content-Type' =>'application/json'})
     req.body = api_args(actual_args).to_json
     http_client.start {|http| http.request(req) }
   end

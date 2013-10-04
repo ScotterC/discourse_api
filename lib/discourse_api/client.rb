@@ -13,4 +13,7 @@ class DiscourseApi::Client < DiscourseApi::Resource
   get :categories => "/categories.json"
 
   get :topic => "/t/:topic_id.json"
+
+  multipart_post :upload_avatar => '/users/:username/preferences/avatar',
+                 :require => [:username]
 end
